@@ -41,24 +41,6 @@ SEDS537_Midterm/
 ├── data/                                  # Auto-downloaded datasets (Fashion-MNIST)
 │
 └── *.png                                  # Generated figures (18 total)
-    ├── q1_histograms.png
-    ├── q1_correlation_matrix.png
-    ├── q1_scatter_plots.png
-    ├── q1_residual_plots.png
-    ├── q2_class_distribution.png
-    ├── q2_confusion_original.png
-    ├── q2_roc_curves.png
-    ├── q3_pca_variance.png
-    ├── q3_embeddings.png
-    ├── q4_elbow_silhouette.png
-    ├── q4_dendrogram.png
-    ├── q4_kdistance.png
-    ├── q4_cluster_visualization.png
-    ├── q4_cluster_profiles.png
-    ├── q5_training_curves.png
-    ├── q5_confusion_matrices.png
-    ├── q5_misclassified_mlp.png
-    └── q5_misclassified_cnn.png
 ```
 
 ---

@@ -1,0 +1,691 @@
+\documentclass[11pt,a4paper]{article}
+
+% ─── Packages ─────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{parskip}
+
+% ─── Colors ───────────────────────────────────────────────────────
+\definecolor{darkblue}{RGB}{0,51,102}
+\definecolor{accentblue}{RGB}{30,100,180}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=darkblue,
+    urlcolor=accentblue,
+    citecolor=darkblue
+}
+
+% ─── Headers / Footers ────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{darkblue}{\small SEDS 537 -- Machine Learning Midterm}}
+\lhead{\textcolor{darkblue}{\small 323011020}}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ─── Document ─────────────────────────────────────────────────────
+\begin{document}
+
+% =================================================================
+% TITLE PAGE
+% =================================================================
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+
+    {\Large \textbf{SEDS 537 -- Machine Learning} \par}
+    \vspace{0.4cm}
+    {\large Take-Home Midterm Examination \par}
+    \vspace{0.2cm}
+    {\small Instructor: Prof.\ Dr.\ Aytug Onan \par}
+
+    \vspace{1.5cm}
+    \rule{\linewidth}{1.5pt}
+    \vspace{0.3cm}
+
+    {\LARGE \textbf{Midterm Report} \par}
+    \vspace{0.2cm}
+    {\Large Five Machine Learning Tasks \par}
+    \vspace{0.3cm}
+    {\large Regression $\cdot$ Classification $\cdot$ Dimensionality Reduction \par}
+    {\large Clustering $\cdot$ Neural Networks \par}
+
+    \vspace{0.3cm}
+    \rule{\linewidth}{1.5pt}
+
+    \vspace{1.5cm}
+    {\large \textbf{Student ID:} 323011020 \par}
+    \vspace{0.3cm}
+    {\large \textbf{Date:} April 2026 \par}
+
+    \vfill
+    {\small Department of Software Engineering \\
+    Izmir Institute of Technology}
+\end{titlepage}
+
+% =================================================================
+% TABLE OF CONTENTS
+% =================================================================
+\tableofcontents
+\newpage
+
+% =================================================================
+% INTRODUCTION
+% =================================================================
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+
+This report presents the solutions for the five questions of the SEDS~537 Machine Learning take-home midterm.
+Each question covers a different topic in machine learning:
+
+\begin{itemize}
+    \item \textbf{Question 1:} Regression on California Housing data.
+    \item \textbf{Question 2:} Classification with class imbalance (Credit Card Fraud).
+    \item \textbf{Question 3:} Dimensionality reduction with PCA and t-SNE on MNIST.
+    \item \textbf{Question 4:} Clustering on the Wholesale Customer dataset.
+    \item \textbf{Question 5:} Neural networks (MLP vs CNN) on Fashion-MNIST.
+\end{itemize}
+
+All experiments are reproducible. We used \texttt{random\_state=42} everywhere. The code is provided as Jupyter notebooks (Q1--Q5) and is publicly available at \url{https://github.com/yasntrk/experimental-ml-projects}. All figures shown in this report are generated from those notebooks.
+
+\newpage
+
+% =================================================================
+% QUESTION 1 — REGRESSION
+% =================================================================
+\section{Question 1: Regression -- Predicting House Prices}
+
+\subsection{Objective and Dataset}
+
+The goal is to compare regression models on the \textbf{California Housing} dataset.
+The dataset has 20{,}640 samples and 8 numerical features. The target is the median house value (in \$100{,}000s).
+
+\subsection{Exploratory Data Analysis}
+
+We first looked at feature distributions, correlations, and scatter plots.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{q1_histograms.png}
+    \caption{Histograms of all features in the California Housing dataset.}
+    \label{fig:q1_hist}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{q1_correlation_matrix.png}
+    \caption{Correlation matrix. Median income (\texttt{MedInc}) has the strongest positive correlation with the target.}
+    \label{fig:q1_corr}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q1_scatter_plots.png}
+    \caption{Scatter plots of the four most correlated features against the target.}
+    \label{fig:q1_scatter}
+\end{figure}
+
+\textbf{Observations:}
+\begin{itemize}
+    \item \texttt{MedInc} is highly correlated with the target ($r \approx 0.69$).
+    \item Some features (\texttt{AveRooms}, \texttt{Population}) are very right-skewed.
+    \item There is a clear cap at \texttt{MedHouseVal}~$=5.0$ which appears as a horizontal band in the scatter plots.
+\end{itemize}
+
+\subsection{Models and Evaluation}
+
+We compared three regression models: Linear Regression, Ridge Regression with cross-validated alpha, and Random Forest. We evaluated them with three settings: original features, scaled features, and polynomial (degree 2) features.
+
+\begin{table}[H]
+\centering
+\caption{Q1 Results -- All Models and Settings}
+\label{tab:q1_results}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{RMSE} & \textbf{MAE} & \textbf{R²} \\
+\midrule
+Linear Regression          & 0.7456 & 0.5332 & 0.5758 \\
+Ridge Regression (CV)      & 0.7451 & 0.5332 & 0.5763 \\
+Random Forest              & 0.5057 & 0.3276 & 0.8049 \\
+\midrule
+Linear Regression (Scaled) & 0.7456 & 0.5332 & 0.5758 \\
+Ridge Regression (Scaled)  & 0.7456 & 0.5332 & 0.5758 \\
+Random Forest (Scaled)     & 0.5055 & 0.3276 & 0.8050 \\
+\midrule
+Linear Regression (Poly)   & 0.6814 & 0.4670 & 0.6457 \\
+Ridge Regression (Poly)    & 0.6787 & 0.4819 & 0.6485 \\
+Random Forest (Poly)       & 0.5126 & 0.3332 & 0.7995 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Impact of Scaling}
+
+Standard scaling makes all features have mean 0 and standard deviation 1.
+\begin{itemize}
+    \item For \textbf{Linear Regression}, scaling does not change predictions; only coefficient sizes change.
+    \item For \textbf{Ridge Regression}, scaling is important because the L2 penalty treats all features equally only when they are on the same scale.
+    \item For \textbf{Random Forest}, scaling has no effect because trees are based on splits.
+\end{itemize}
+
+\subsection{Polynomial Features}
+
+We added polynomial features of degree 2 (44 features from 8 original).
+This improved Linear and Ridge Regression a lot (R²: 0.58 $\to$ 0.65). For Random Forest, polynomial features did not help, because the model can already capture non-linear patterns.
+
+\subsection{Residual Plots}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q1_residual_plots.png}
+    \caption{Residual plots (Fitted values vs Residuals) for the three models.}
+    \label{fig:q1_residuals}
+\end{figure}
+
+\textbf{Analysis:}
+\begin{itemize}
+    \item Linear and Ridge residuals show a funnel shape (heteroscedasticity). Variance increases with predicted value.
+    \item There is a horizontal band at the top because the target is capped at 5.0.
+    \item Random Forest residuals are more uniform around zero, which means the model fits better.
+\end{itemize}
+
+\subsection{Conclusion: Interpretability vs Predictive Performance}
+
+\begin{table}[H]
+\centering
+\caption{Trade-off between Interpretability and Performance}
+\begin{tabular}{lll}
+\toprule
+\textbf{Model} & \textbf{Interpretability} & \textbf{Performance} \\
+\midrule
+Linear Regression & High & Moderate \\
+Ridge Regression  & High & Moderate \\
+Random Forest     & Low (black box) & High \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Random Forest gives the best results (R²~$\approx 0.80$) but is hard to interpret.
+Linear models are easy to explain but cannot capture non-linear patterns.
+Polynomial features bring linear models closer to Random Forest performance with the cost of more features.
+
+\newpage
+
+% =================================================================
+% QUESTION 2 — CLASSIFICATION (IMBALANCE)
+% =================================================================
+\section{Question 2: Classification -- Handling Class Imbalance}
+
+\subsection{Dataset and Class Distribution}
+
+We used the \textbf{Credit Card Fraud Detection} dataset from Kaggle.
+It has 284{,}807 transactions and only 492 fraud cases (about 0.17\%).
+
+\begin{table}[H]
+\centering
+\caption{Class Distribution}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Class} & \textbf{Count} & \textbf{Percentage} \\
+\midrule
+Normal (0) & 284{,}315 & 99.827\% \\
+Fraud  (1) &     492   &  0.173\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.55\textwidth]{q2_class_distribution.png}
+    \caption{Class Distribution: Normal vs Fraud Transactions.}
+    \label{fig:q2_classdist}
+\end{figure}
+
+The dataset is very imbalanced. A model that always predicts ``Normal'' would have 99.83\% accuracy, but it would not catch any fraud. So we need better metrics (precision, recall, F1, ROC-AUC) and resampling techniques.
+
+\subsection{Preprocessing}
+
+\begin{itemize}
+    \item Scaled \texttt{Amount} and \texttt{Time} with \texttt{StandardScaler} (V1--V28 are already PCA-transformed).
+    \item Train/Test split: 80\%/20\% with \texttt{stratify=y}.
+\end{itemize}
+
+\subsection{Classifiers}
+
+We trained three classifiers: \textbf{Logistic Regression}, \textbf{Random Forest}, and \textbf{XGBoost}.
+
+\subsection{Resampling Techniques}
+
+\begin{itemize}
+    \item \textbf{SMOTE:} creates synthetic fraud samples by interpolating between existing fraud points.
+    \item \textbf{Random undersampling:} removes random normal samples until the classes are balanced.
+\end{itemize}
+
+\subsection{Results}
+
+\begin{table}[H]
+\centering
+\caption{Q2 Results -- All Models and Resampling Strategies (Fraud Class)}
+\label{tab:q2_results}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Resampling} & \textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} & \textbf{ROC-AUC} \\
+\midrule
+None        & Logistic Regression & 0.8713 & 0.6327 & 0.7333 & 0.9691 \\
+None        & Random Forest       & 0.9524 & 0.8163 & 0.8791 & 0.9771 \\
+None        & XGBoost             & 0.9302 & 0.8163 & 0.8696 & 0.9814 \\
+\midrule
+SMOTE       & Logistic Regression & 0.0711 & 0.9184 & 0.1317 & 0.9724 \\
+SMOTE       & Random Forest       & 0.8947 & 0.8673 & 0.8808 & 0.9782 \\
+SMOTE       & XGBoost             & 0.8148 & 0.8980 & 0.8545 & 0.9813 \\
+\midrule
+Undersample & Logistic Regression & 0.0524 & 0.9388 & 0.0993 & 0.9641 \\
+Undersample & Random Forest       & 0.0679 & 0.9184 & 0.1268 & 0.9718 \\
+Undersample & XGBoost             & 0.0812 & 0.9082 & 0.1491 & 0.9756 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Confusion Matrices and ROC Curves}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q2_confusion_original.png}
+    \caption{Confusion matrices without resampling.}
+    \label{fig:q2_cm}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{q2_roc_curves.png}
+    \caption{ROC curves for XGBoost under different resampling strategies.}
+    \label{fig:q2_roc}
+\end{figure}
+
+\subsection{Precision-Recall Trade-off}
+
+In fraud detection:
+\begin{itemize}
+    \item \textbf{False Negative (FN):} missed fraud. The bank loses money. \emph{Very costly}.
+    \item \textbf{False Positive (FP):} a normal transaction marked as fraud. \emph{Less costly} -- only inconvenience.
+\end{itemize}
+
+So \textbf{Recall is more important than Precision}. We prefer to catch as much fraud as possible, even with some false alarms.
+
+\subsection{Conclusion}
+
+\begin{itemize}
+    \item XGBoost has the highest ROC-AUC ($\approx 0.98$).
+    \item SMOTE is better than random undersampling: it gives higher recall while keeping precision reasonable. Undersampling drops precision very low.
+    \item \textbf{Random Forest with SMOTE} (F1 = 0.8808) gives the best balance for this task.
+\end{itemize}
+
+\newpage
+
+% =================================================================
+% QUESTION 3 — DIMENSIONALITY REDUCTION
+% =================================================================
+\section{Question 3: Dimensionality Reduction and Visualisation}
+
+\subsection{Dataset}
+
+We used the \textbf{MNIST} dataset (70{,}000 handwritten digit images, 28$\times$28 pixels = 784 features).
+For visualisation and t-SNE, we used a random subset of 8{,}000--10{,}000 samples (t-SNE is slow for large data).
+
+\subsection{PCA: 2D and 50D}
+
+We reduced data to 2D and 50D with PCA.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q3_pca_variance.png}
+    \caption{Left: explained variance ratio for PC1--PC10. Right: cumulative explained variance for 50 PCs.}
+    \label{fig:q3_pca_var}
+\end{figure}
+
+\textbf{Explained variance for first 10 components:}
+
+\begin{table}[H]
+\centering
+\caption{PCA Explained Variance Ratio (First 10 Components)}
+\begin{tabular}{lcccccccccc}
+\toprule
+\textbf{PC} & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 \\
+\midrule
+\textbf{Ratio} & 0.097 & 0.071 & 0.062 & 0.054 & 0.049 & 0.043 & 0.033 & 0.029 & 0.028 & 0.024 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The first 10 components explain about 49\% of variance. The first 50 components explain about 82\%.
+
+\subsection{t-SNE: 2D Embeddings}
+
+t-SNE was applied with two perplexity values: 30 and 50.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q3_embeddings.png}
+    \caption{2D embeddings: PCA (left), t-SNE perplexity~30 (middle), t-SNE perplexity~50 (right).}
+    \label{fig:q3_emb}
+\end{figure}
+
+\textbf{Observations:}
+\begin{itemize}
+    \item PCA 2D projection shows overlapping classes -- it cannot separate digits well in 2D.
+    \item t-SNE produces clear clusters for each digit. The clusters are well separated.
+    \item Higher perplexity (50) makes clusters bigger and slightly closer to each other.
+\end{itemize}
+
+\subsection{k-NN Classification Comparison}
+
+We trained k-NN (k=5) on three feature spaces and used 5-fold cross-validation.
+
+\begin{table}[H]
+\centering
+\caption{Q3 -- 5-Fold CV Accuracy of k-NN}
+\label{tab:q3_knn}
+\begin{tabular}{lc}
+\toprule
+\textbf{Feature Space} & \textbf{Accuracy} \\
+\midrule
+Original (784D)        & $\approx 0.95$ \\
+PCA 50D                & $\approx 0.95$ \\
+t-SNE 2D               & $\approx 0.96$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{PCA vs t-SNE Discussion}
+
+\begin{table}[H]
+\centering
+\caption{PCA vs t-SNE Comparison}
+\begin{tabular}{p{3.5cm}p{5.5cm}p{5.5cm}}
+\toprule
+\textbf{Aspect} & \textbf{PCA} & \textbf{t-SNE} \\
+\midrule
+Type           & Linear, deterministic       & Non-linear, stochastic \\
+Speed          & Fast                        & Slow \\
+Visualisation  & Overlapping clusters        & Well-separated clusters \\
+Downstream use & Good (preserves global structure) & Limited (only local) \\
+New data       & Yes (transform method)      & No (must refit) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Conclusion:} PCA is best for preprocessing before classification. t-SNE is best for visualization and exploratory analysis.
+
+\newpage
+
+% =================================================================
+% QUESTION 4 — CLUSTERING
+% =================================================================
+\section{Question 4: Clustering -- Unsupervised Learning}
+
+\subsection{Dataset}
+
+We used the \textbf{Wholesale Customer} dataset from UCI (440 customers, 6 spending features: Fresh, Milk, Grocery, Frozen, Detergents\_Paper, Delicassen).
+Features were scaled with \texttt{StandardScaler}.
+
+\subsection{K-Means: Choosing k}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q4_elbow_silhouette.png}
+    \caption{Left: Elbow method (Inertia vs k). Right: Silhouette score vs k.}
+    \label{fig:q4_elbow}
+\end{figure}
+
+The silhouette score is highest at $k = 2$. So we used $k = 2$ for K-Means.
+
+\subsection{Agglomerative Clustering (Ward Linkage)}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{q4_dendrogram.png}
+    \caption{Hierarchical clustering dendrogram (Ward linkage).}
+    \label{fig:q4_dendro}
+\end{figure}
+
+The dendrogram supports 2 large clusters as well.
+
+\subsection{DBSCAN: Tuning eps}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{q4_kdistance.png}
+    \caption{k-distance graph (k=5) for DBSCAN \texttt{eps} selection.}
+    \label{fig:q4_kdist}
+\end{figure}
+
+We chose \texttt{eps} from the elbow of this curve.
+
+\subsection{Evaluation Metrics}
+
+\begin{table}[H]
+\centering
+\caption{Q4 -- Internal Cluster Evaluation Metrics}
+\label{tab:q4_metrics}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Algorithm}   & \textbf{Silhouette} (higher is better) & \textbf{Davies-Bouldin} (lower is better) \\
+\midrule
+K-Means (k=2)        & $\approx 0.50$  & $\approx 0.81$ \\
+Agglomerative (k=2)  & $\approx 0.49$  & $\approx 0.85$ \\
+DBSCAN               & varies          & varies \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cluster Visualisation}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q4_cluster_visualization.png}
+    \caption{Clusters projected to 2D using PCA, for each algorithm.}
+    \label{fig:q4_clusters}
+\end{figure}
+
+\subsection{Cluster Interpretation}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{q4_cluster_profiles.png}
+    \caption{K-Means cluster profiles: normalized average spending per category.}
+    \label{fig:q4_profiles}
+\end{figure}
+
+\textbf{Cluster characteristics:}
+\begin{itemize}
+    \item \textbf{Cluster 0:} Customers with moderate spending in all categories. Likely small retailers or restaurants (high \texttt{Fresh}).
+    \item \textbf{Cluster 1:} Customers with higher spending on \texttt{Milk}, \texttt{Grocery}, and \texttt{Detergents\_Paper}. Likely supermarkets or hotels.
+\end{itemize}
+
+\subsection{DBSCAN Sensitivity}
+
+DBSCAN is very sensitive to its parameters:
+\begin{itemize}
+    \item Very small \texttt{eps}: most points become noise; few or no clusters.
+    \item Very large \texttt{eps}: all points merge into one cluster.
+    \item DBSCAN can find arbitrary-shaped clusters and handle outliers, but it struggles when clusters have different densities.
+\end{itemize}
+
+\subsection{Algorithm Comparison}
+
+\begin{table}[H]
+\centering
+\caption{Clustering Algorithms Compared}
+\begin{tabular}{lll}
+\toprule
+\textbf{Algorithm} & \textbf{Cluster Shape} & \textbf{Notes} \\
+\midrule
+K-Means        & Spherical & Fast; needs k; sensitive to outliers \\
+Agglomerative  & Hierarchical & Dendrogram useful; expensive memory \\
+DBSCAN         & Arbitrary & Finds noise; sensitive to eps and density \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\newpage
+
+% =================================================================
+% QUESTION 5 — NEURAL NETWORKS
+% =================================================================
+\section{Question 5: Neural Networks -- MLP vs CNN}
+
+\subsection{Dataset}
+
+We used \textbf{Fashion-MNIST}: 70{,}000 grayscale images of 10 clothing classes (28$\times$28 pixels).
+Train/Val/Test split: 51{,}000 / 9{,}000 / 10{,}000 samples.
+
+\subsection{Models}
+
+\textbf{MLP (Multilayer Perceptron):}
+\begin{itemize}
+    \item Input flattened to 784 values.
+    \item Hidden layer 1: 256 neurons, ReLU, Dropout 0.3.
+    \item Hidden layer 2: 128 neurons, ReLU, Dropout 0.3.
+    \item Output: 10 classes.
+\end{itemize}
+
+\textbf{CNN (Convolutional Neural Network):}
+\begin{itemize}
+    \item Conv2D (32 filters, 3$\times$3) + ReLU + MaxPool 2$\times$2.
+    \item Conv2D (64 filters, 3$\times$3) + ReLU + MaxPool 2$\times$2.
+    \item Flatten + Dense (128) + ReLU + Dropout 0.3.
+    \item Output: 10 classes.
+\end{itemize}
+
+Both models were trained with Adam optimizer (lr=0.001) and cross-entropy loss. Early stopping used validation loss with patience~4.
+
+\subsection{Training Curves}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q5_training_curves.png}
+    \caption{Training and validation curves for MLP (left) and CNN (right).}
+    \label{fig:q5_curves}
+\end{figure}
+
+\textbf{Overfitting analysis:}
+\begin{itemize}
+    \item Both models show some overfitting after a few epochs (training loss keeps going down, validation loss increases).
+    \item Early stopping helps to keep the best model.
+    \item Dropout layers and regularization help to reduce overfitting.
+\end{itemize}
+
+\subsection{Test Set Performance}
+
+\begin{table}[H]
+\centering
+\caption{Q5 -- Test Performance}
+\label{tab:q5_results}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Accuracy} & \textbf{Macro-F1} \\
+\midrule
+MLP & $\approx 0.88$ & $\approx 0.88$ \\
+CNN & $\approx 0.91$ & $\approx 0.91$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Confusion Matrices}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q5_confusion_matrices.png}
+    \caption{Confusion matrices on the test set for MLP and CNN.}
+    \label{fig:q5_cm}
+\end{figure}
+
+The most confused pairs are: \emph{Shirt} ↔ \emph{T-shirt/top} ↔ \emph{Coat} ↔ \emph{Pullover}. These classes share similar shapes (sleeves, collars).
+
+\subsection{Misclassified Examples}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q5_misclassified_mlp.png}
+    \caption{Five MLP misclassified samples.}
+    \label{fig:q5_mis_mlp}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{q5_misclassified_cnn.png}
+    \caption{Five CNN misclassified samples.}
+    \label{fig:q5_mis_cnn}
+\end{figure}
+
+\textbf{Possible reasons for misclassification:}
+\begin{itemize}
+    \item Low resolution (28$\times$28) makes it hard to see details.
+    \item Some classes are visually very similar (Shirt vs T-shirt vs Pullover).
+    \item Sandals and sneakers can look similar in low-resolution silhouettes.
+\end{itemize}
+
+\subsection{Why CNN Performs Better}
+
+\begin{table}[H]
+\centering
+\caption{MLP vs CNN Comparison}
+\begin{tabular}{p{4cm}p{5cm}p{5cm}}
+\toprule
+\textbf{Aspect} & \textbf{MLP} & \textbf{CNN} \\
+\midrule
+Input handling      & Flattened (784,) -- spatial info lost & 2D (1, 28, 28) -- spatial info preserved \\
+Feature detection   & Position-specific & Translation-invariant (filters slide over image) \\
+Parameter sharing   & No -- huge dense layers & Yes -- weights shared across image \\
+Hierarchical features & Limited & Strong (edges $\to$ shapes $\to$ objects) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Conclusion:} CNN performs better on images because:
+\begin{enumerate}
+    \item Convolutional layers detect local patterns (edges, textures) regardless of where they appear in the image.
+    \item Weight sharing reduces parameters and prevents overfitting.
+    \item Pooling makes the model robust to small shifts.
+    \item Hierarchical feature learning matches the structure of natural images.
+\end{enumerate}
+
+\newpage
+
+% =================================================================
+% FINAL CONCLUSION
+% =================================================================
+\section{Overall Conclusion}
+
+This midterm covered five core topics in machine learning. The main takeaways are:
+
+\begin{enumerate}
+    \item \textbf{Q1 (Regression):} Random Forest beats linear models on California Housing. Polynomial features help linear models but increase complexity.
+    \item \textbf{Q2 (Classification):} For imbalanced data, accuracy is misleading. SMOTE + Random Forest gives the best precision/recall balance for fraud detection.
+    \item \textbf{Q3 (Dim. Reduction):} PCA preserves global structure (good for downstream tasks); t-SNE produces beautiful visualizations of local structure.
+    \item \textbf{Q4 (Clustering):} K-Means with $k=2$ separates wholesale customers well into ``small retailers'' and ``supermarkets''. DBSCAN is powerful but very sensitive to parameters.
+    \item \textbf{Q5 (Neural Networks):} CNNs clearly outperform MLPs on image data, thanks to translation invariance and hierarchical feature learning.
+\end{enumerate}
+
+The general lesson is: \emph{the right model depends on the data}. Linear models are good when relationships are simple. Tree ensembles work well on tabular data. Neural networks excel on unstructured data like images.
+
+\vspace{1cm}
+\noindent\rule{\linewidth}{0.5pt}
+\begin{center}
+    \small \textit{SEDS 537 -- Machine Learning Take-Home Midterm} \\
+    \textit{Student ID: 323011020 | April 2026}
+\end{center}
+
+\end{document}
